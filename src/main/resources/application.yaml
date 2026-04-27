@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: grid07
+  datasource:
+    url: jdbc:postgresql://localhost:5432/grid07db
+    username: admin
+    password: admin123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
