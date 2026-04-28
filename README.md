@@ -34,17 +34,17 @@ The bot horizontal cap (max 100 bots per post) uses Redis atomic INCR operation.
 ### The Problem Without Atomicity
 Two threads read bot_count = 99 simultaneously. Both think they are the 100th bot and both pass.
 
-Thread 1 reads bot_count = 99 → thinks it's allowed ✅
-Thread 2 reads bot_count = 99 → thinks it's allowed ✅
+Thread 1 reads bot_count = 99 → thinks it's allowed ✅\
+Thread 2 reads bot_count = 99 → thinks it's allowed ✅\
 Both pass → 101 bots get through ❌
 
 ### The Solution - Redis Atomic INCR
 Redis is single-threaded internally. INCR reads and increments in one uninterruptible operation. 
 No two threads can ever read the same value.
 
-Thread 1: INCR → 100 → allowed ✅
-Thread 2: INCR → 101 → blocked ❌
-Thread 3: INCR → 102 → blocked ❌
+Thread 1: INCR → 100 → allowed ✅\
+Thread 2: INCR → 101 → blocked ❌\
+Thread 3: INCR → 102 → blocked ❌\
 Exactly 100 pass through ✅
 
 This was verified with 200 concurrent threads in Phase 4. Exactly 100 passed — never more.
