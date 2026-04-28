@@ -1,14 +1,20 @@
 spring:
   application:
     name: grid07
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/grid07db
+    url: jdbc:postgresql://localhost:5432/grid07db?options=-c%20TimeZone=UTC
     username: admin
     password: admin123
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
   data:
     redis:
       host: localhost

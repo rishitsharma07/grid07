@@ -13,7 +13,7 @@ public class RedisGuardrailsService {
     private final RedisTemplate<String, String> redisTemplate;
 
     public void incrementViralityScore(Long postId, String interactionType){
-        String key = "post:" + postId +"virality_score";
+        String key = "post:" + postId + ":virality_score";
         int points = switch (interactionType){
             case "BOT_REPLY"     -> 1;
             case "HUMAN_LIKE"    ->20;
@@ -24,10 +24,9 @@ public class RedisGuardrailsService {
     }
 
     public boolean tryIncrementBotCount(Long postId){
-        String key = "post:" + postId + "bot_count";
+        String key = "post:" + postId + ":bot_count";
         Long count = redisTemplate.opsForValue().increment(key);
-        if (count != null && count > 100){
-            redisTemplate.opsForValue().decrement(key);
+        if (count == null || count > 100){
             return false;
         }
         return true;
@@ -41,5 +40,20 @@ public class RedisGuardrailsService {
         String key = "cooldown:bot_" + botId + ":human_" + humanId;
         Boolean wasAbsent = redisTemplate.opsForValue().setIfAbsent(key, "1", Duration.ofMinutes(10));
         return  Boolean.TRUE.equals(wasAbsent);
+    }
+
+    public boolean hasRecentNotification(Long userId){
+        String key = "notif_cooldown:user_" + userId;
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+    public void queuePendingNotification(Long userId, String message){
+        String key = "user:" + userId + ":pending_notifs";
+        redisTemplate.opsForList().rightPush(key,message);
+    }
+
+    public void setNotificationCooldown(Long userId){
+        String key = "notif_cooldown:user_" + userId;
+        redisTemplate.opsForValue().set(key, "1", Duration.ofMinutes(15));
     }
 }
