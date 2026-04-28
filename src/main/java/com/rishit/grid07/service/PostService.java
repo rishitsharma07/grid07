@@ -19,6 +19,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
+    private final RedisGuardrailsService redisGuardrailsService;
 
     public Post createPost(PostRequest req){
 
@@ -34,6 +35,26 @@ public class PostService {
 
     public ResponseEntity<?> addComment(Long postId, CommentRequest req){
 
+        if(!redisGuardrailsService.isDepthAllowed(req.getDepthLevel())){
+            return ResponseEntity.status(429).body("Thread too deep - maximum 20 levels allowed");
+        }
+
+        if ("BOT".equals(req.getAuthorType())){
+
+            if (!redisGuardrailsService.tryIncrementBotCount(postId)){
+                return ResponseEntity.status(429).body("Bot reply limit reached - maximum 100 bot replies per post");
+            }
+
+            if (!redisGuardrailsService.tryAcquireCooldown(req.getAuthorId(), req.getTargetUserId())){
+                return ResponseEntity.status(429).body("Bot cooldown active - please wait 10 minutes");
+            }
+
+            redisGuardrailsService.incrementViralityScore(postId, "BOT_REPLY");
+        }
+        else {
+            redisGuardrailsService.incrementViralityScore(postId,"HUMAN_COMMENT");
+        }
+
         Comment comment = new Comment();
 
         comment.setPostId(postId);
@@ -47,7 +68,9 @@ public class PostService {
     }
 
     public ResponseEntity<?> likePost(Long postId, LikeRequest req){
-        //Phase 2 will add Redis virality score here
-        return ResponseEntity.ok("Post" + postId + " liked by user " + req.getUserId());
+
+        redisGuardrailsService.incrementViralityScore(postId, "HUMAN_LIKE");
+
+        return ResponseEntity.ok("Post" + postId + " liked by user " + req.getUserId() + " - virality score updated!");
     }
 }
